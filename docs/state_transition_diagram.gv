@@ -1,0 +1,31 @@
+digraph G {
+  Uninitialized [shape=box3d]
+  Resetting [shape=box3d]
+  Idle [shape=box3d]
+  WritingSettings [shape=box3d]
+  Capturing [shape=box3d]
+  FinishingCapture [label="FinishingCapture",shape=box3d]
+
+  NewData [label="New data",shape=box]
+
+  Uninitialized -> Resetting [label="beginReset"]
+
+  Resetting -> Resetting [label="beginReset"]
+  Resetting -> Idle [label="update"]
+
+  Idle -> Resetting [label="beginReset"]
+  Idle -> Idle [label="readSettings"]
+  Idle -> WritingSettings [label="beginWriteSettings"]
+  Idle -> Capturing [label="beginCapture"]
+
+  WritingSettings -> Resetting [label="beginReset"]
+  WritingSettings -> Idle [label="update"]
+
+  Capturing -> Resetting [label="beginReset"]
+  Capturing -> FinishingCapture [label="endCapture"]
+  Capturing -> NewData [label="update",style=dashed]
+
+  FinishingCapture -> Resetting [label="beginReset"]
+  FinishingCapture -> Idle [label="update"]
+  FinishingCapture -> NewData [label="update",style=dashed]
+}

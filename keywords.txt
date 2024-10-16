@@ -1,0 +1,11 @@
+# Syntax Colouring Map For ADS1256_async
+
+# Datatypes (KEYWORD1)
+ADS1256async    KEYWORD1
+
+# Methods and Functions (KEYWORD2)
+initialize	KEYWORD2
+
+# Instances (KEYWORD2)
+
+# Constants (LITERAL1)
