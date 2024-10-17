@@ -4,13 +4,13 @@
 
 // Assumes ADS1256 is connected to SPI pins for SCLK, MOSI, and MISO
 const uint8_t ADC_DRDY = 4;
-const uint8_t ADC_RESET = 18;  // This can be either the dedicated RST pin, or the SCLK pin (based on ADC_RESET_MODE below)
+const uint8_t ADC_RESET = 18;  // This can be either the dedicated RST pin, or the SCLK pin (based on adcESET_MODE below)
 const uint8_t ADC_SYNC = NO_PIN;
 const uint8_t ADC_CS = 2;
 const ADS1256ResetMode ADC_RESET_MODE = ADS1256ResetMode::ClockPin;
 
 #define N_CHANNELS 5
-ADS1256<N_CHANNELS> adc_r(SPI, ADC_CS, ADC_DRDY, ADC_RESET, ADC_SYNC, ADC_RESET_MODE);
+ADS1256<N_CHANNELS> adc(SPI, ADC_CS, ADC_DRDY, ADC_RESET, ADC_SYNC, ADC_RESET_MODE);
 
 unsigned long last_print;
 
@@ -22,26 +22,26 @@ void setup() {
 
   // Define desired configuration settings for ADS1256
   // Note that settings with matching default values do not need to be set explicitly
-  adc_r.auto_calibration = true;
-  adc_r.buffer = true;
-  adc_r.clock_out = ClockOut::Off;
-  adc_r.data_rate = DataRate::SPS30000;
-  adc_r.gain = Gain::X1;
-  adc_r.lsb_first = false;
-  adc_r.sensor_detect = SDCS::Off;
+  adc.auto_calibration = true;
+  adc.buffer = true;
+  adc.clock_out = ClockOut::Off;
+  adc.data_rate = DataRate::SPS30000;
+  adc.gain = Gain::X1;
+  adc.lsb_first = false;
+  adc.sensor_detect = SDCS::Off;
 
   // Define multiplexer configurations to cycle through when capturing data
-  adc_r.muxes[0] = mux_of(0);  // AIN0
-  adc_r.muxes[1] = mux_of(0, 1);  // AIN1-AIN0
-  adc_r.muxes[2] = mux_of(2, 3);  // AIN3-AIN2
-  adc_r.muxes[3] = mux_of(4, 5);  // AIN5-AIN4
-  adc_r.muxes[4] = mux_of(6, 7);  // AIN7-AIN6
+  adc.muxes[0] = mux_of(0);  // AIN0
+  adc.muxes[1] = mux_of(0, 1);  // AIN1-AIN0
+  adc.muxes[2] = mux_of(2, 3);  // AIN3-AIN2
+  adc.muxes[3] = mux_of(4, 5);  // AIN5-AIN4
+  adc.muxes[4] = mux_of(6, 7);  // AIN7-AIN6
 
   Serial.println("Initializing ADS1256...");
 
   // Begin asynchronous reset
   unsigned long t0 = micros();
-  ADS1256Error result = adc_r.beginReset();
+  ADS1256Error result = adc.beginReset();
   if (result != ADS1256Error::None) {
     Serial.print("Unable to begin ADS1256 reset: ");
     Serial.println(name_of(result));
@@ -50,14 +50,14 @@ void setup() {
 
   // Wait for reset to complete
   last_print = millis();
-  while (adc_r.state() != ADS1256State::Idle) {
+  while (adc.state() != ADS1256State::Idle) {
     if (millis() > last_print + 1000) {
       Serial.print("  Still resetting ADS1256 (");
-      Serial.print(name_of(adc_r.state()));
+      Serial.print(name_of(adc.state()));
       Serial.println(")...");
       last_print = millis();
     }
-    adc_r.update();
+    adc.update();
   }
   unsigned long dt = micros() - t0;
   Serial.print("  Complete in ");
@@ -67,7 +67,7 @@ void setup() {
   // Write our desired settings
   Serial.println("Writing ADS1256 settings...");
   t0 = micros();
-  result = adc_r.beginWriteSettings();
+  result = adc.beginWriteSettings();
   if (result != ADS1256Error::None) {
     Serial.print("Unable to begin writing ADS1256 settings: ");
     Serial.println(name_of(result));
@@ -76,14 +76,14 @@ void setup() {
 
   // Wait for settings-write to complete (includes auto calibration)
   last_print = millis();
-  while (adc_r.state() != ADS1256State::Idle) {
+  while (adc.state() != ADS1256State::Idle) {
     if (millis() > last_print + 1000) {
       Serial.print("  Still writing ADS1256 settings(");
-      Serial.print(name_of(adc_r.state()));
+      Serial.print(name_of(adc.state()));
       Serial.println(")...");
       last_print = millis();
     }
-    adc_r.update();
+    adc.update();
   }
   dt = micros() - t0;
   Serial.print("  Complete in ");
@@ -91,7 +91,7 @@ void setup() {
   Serial.println("us");
 
   // Verify that the settings were written correctly by reading them back
-  result = adc_r.readSettings(true);
+  result = adc.readSettings(false);
   if (result != ADS1256Error::None) {
     Serial.print("Unable to verify ADS1256 settings: ");
     Serial.println(name_of(result));
@@ -102,7 +102,7 @@ void setup() {
 
   // Display configuration information
   Serial.println("ADS1256 configuration:");
-  print_configuration(adc_r);
+  print_configuration(adc);
 }
 
 void loop() {
@@ -113,7 +113,7 @@ void loop() {
   // This is an alternative to the asynchronous initialization demonstrated in setup()
   Serial.print("blockingInit ");
   unsigned long t0 = micros();
-  ADS1256Error result = adc_r.blockingInit();
+  ADS1256Error result = adc.blockingInit();
   unsigned long dt = micros() - t0;
   if (result != ADS1256Error::None) {
     Serial.println(name_of(result));
@@ -125,7 +125,7 @@ void loop() {
 
   // Kick off continuous asynchronous data capture
   Serial.println("Capturing...");
-  result = adc_r.beginCapture();
+  result = adc.beginCapture();
   if (result != ADS1256Error::None) {
     Serial.print("  Error beginning capture: ");
     Serial.println(name_of(result));
@@ -137,12 +137,15 @@ void loop() {
   unsigned long t1 = millis() + DURATION_MS;
   uint32_t n[N_CHANNELS] = {0, 0, 0, 0};
   while (millis() < t1) {
-    adc_r.update();
-    if (adc_r.new_data != NO_NEW_DATA) {
-      n[adc_r.new_data]++;
-      adc_r.new_data = NO_NEW_DATA;
+    adc.update();
+    if (adc.new_data != NO_NEW_DATA) {
+      n[adc.new_data]++;
+      adc.new_data = NO_NEW_DATA;
     }
-    // Note that other activities can be performed here (in between calls to update)
+    // Note that other activities can be performed here (in between calls to update),
+    // though this will add some latency between the ADS1256 being ready to perform
+    // the next capture and the ADS1256 being instructed to perform the next capture
+    // which will reduce achieved sampling frequency.
   }
 
   // Show information about the data captured
@@ -161,7 +164,7 @@ void loop() {
   Serial.print("Most recent values:");
   for (uint8_t c = 0; c < N_CHANNELS; c++) {
     Serial.print(" ");
-    Serial.print(adc_r.values[c]);
+    Serial.print(adc.values[c]);
   }
   Serial.println();
 }

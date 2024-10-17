@@ -346,6 +346,7 @@ ADS1256Error ADS1256<nCycledChannels>::readSettings(bool update_local_settings, 
 
 template<uint8_t nCycledChannels>
 ADS1256Error ADS1256<nCycledChannels>::blockingInit(int16_t timeout_ms) {
+	// Reset ADS1256
 	ADS1256Error result;
 	unsigned long t0 = millis();
 	result = beginReset();
@@ -360,6 +361,7 @@ ADS1256Error ADS1256<nCycledChannels>::blockingInit(int16_t timeout_ms) {
 		update();
 	}
 
+	// Write settings to ADS1256
 	result = beginWriteSettings(t0 + timeout_ms - millis());
 	if (result != ADS1256Error::None) {
 		return result;
@@ -372,7 +374,8 @@ ADS1256Error ADS1256<nCycledChannels>::blockingInit(int16_t timeout_ms) {
 		update();
 	}
 
-	result = readSettings(true, t0 + timeout_ms - millis());
+	// Read settings from ADS1256 to verify accuracy (and presence of ADS1256 device)
+	result = readSettings(false, t0 + timeout_ms - millis());
 	if (result != ADS1256Error::None) {
 		return result;
 	}
