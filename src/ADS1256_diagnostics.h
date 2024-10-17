@@ -56,12 +56,14 @@ String name_of(ADS1256Error error) {
 String name_of_mux(uint8_t mux) {
 	uint8_t n = mux & 0b00001111;
 	uint8_t p = mux >> 4;
-	if (n == MUX_AINCOM && p == MUX_AINCOM) {
-		return "nothing";
+	if (n > MUX_AINCOM || p > MUX_AINCOM) {
+		return "unknown";
 	} else if (n == MUX_AINCOM) {
-		return "-AIN" + String(n);
+		return "AIN" + String(p);
 	} else if (p == MUX_AINCOM) {
-		return "AIN" + String(n);
+		return "-AIN" + String(n);
+	} else if (n == MUX_AINCOM && p == MUX_AINCOM) {
+		return "nothing";
 	} else {
 		return "AIN" + String(p) + "-AIN" + String(n);
 	}
@@ -167,7 +169,8 @@ void print_configuration(ADS1256<nCycledChannels>& adc, Stream& serial) {
   serial.println(name_of(adc.data_rate));
   serial.print("  Gain: ");
   serial.println(name_of(adc.gain));
-  serial.println(adc.lsb_first ? "  Least significant bit first" : "  Most significant bit first");
+  serial.print(adc.lsb_first ? "  Least" : "  Most");
+  serial.println(" significant bit first");
   serial.print("  Sensor detect current sources: ");
   serial.println(name_of(adc.sensor_detect));
 }

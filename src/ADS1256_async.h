@@ -13,13 +13,13 @@
 #define DEFAULT_TIMEOUT_MS (10)
 
 enum class ADS1256ResetMode : uint8_t {
-	Undefined,
+	Undefined = 0,
 	ControlPin,
 	ClockPin,
 };
 
 enum class ADS1256State : uint8_t {
-	Uninitialized,
+	Uninitialized = 0,
 	Resetting,
 	WritingSettings,
 	Idle,
@@ -28,7 +28,7 @@ enum class ADS1256State : uint8_t {
 };
 
 enum class ADS1256Error : uint8_t {
-	None,
+	None = 0,
 	SettingsOutOfSync,
 	NotReadyToWriteSettings,
 	NotReadyToReadSettings,

@@ -3,14 +3,14 @@
 #include <ADS1256_diagnostics.h>
 
 // Assumes ADS1256 is connected to SPI pins for SCLK, MOSI, and MISO
-const uint8_t ADC_DRDY = 4;
-const uint8_t ADC_RESET = 18;  // This can be either the dedicated RST pin, or the SCLK pin (based on adcESET_MODE below)
-const uint8_t ADC_SYNC = NO_PIN;
-const uint8_t ADC_CS = 2;
+const uint8_t ADC_PIN_DRDY = 4;
+const uint8_t ADC_PIN_RESET = 18;  // This can be either the dedicated RST pin, or the SCLK pin (based on ADC_RESET_MODE below)
+const uint8_t ADC_PIN_SYNC = NO_PIN;
+const uint8_t ADC_PIN_CS = 22;
 const ADS1256ResetMode ADC_RESET_MODE = ADS1256ResetMode::ClockPin;
 
 #define N_CHANNELS 5
-ADS1256<N_CHANNELS> adc(SPI, ADC_CS, ADC_DRDY, ADC_RESET, ADC_SYNC, ADC_RESET_MODE);
+ADS1256<N_CHANNELS> adc(SPI, ADC_PIN_CS, ADC_PIN_DRDY, ADC_PIN_RESET, ADC_PIN_SYNC, ADC_RESET_MODE);
 
 unsigned long last_print;
 
@@ -95,6 +95,16 @@ void setup() {
   if (result != ADS1256Error::None) {
     Serial.print("Unable to verify ADS1256 settings: ");
     Serial.println(name_of(result));
+    uint8_t register_values[4];
+    adc.readRegisters(Register::STATUS, 4, register_values);
+    Serial.print("  Register values read: STATUS=0b");
+    Serial.print(register_values[0], BIN);
+    Serial.print(" MUX=0x");
+    Serial.print(register_values[1], HEX);
+    Serial.print(" ADCON=0b");
+    Serial.print(register_values[2], BIN);
+    Serial.print(" DRATE=0b");
+    Serial.println(register_values[3], BIN);
     while (true) {}
   }
 
@@ -149,22 +159,21 @@ void loop() {
   }
 
   // Show information about the data captured
-  Serial.print("Samples captured:");
   uint32_t n_total = 0;
   for (uint8_t c = 0; c < N_CHANNELS; c++) {
-    Serial.print(" ");
-    Serial.print(n[c]);
     n_total += n[c];
   }
-  Serial.print(" (");
   Serial.print(n_total);
-  Serial.print(" total, ");
+  Serial.print(" samples captured at ");
   Serial.print((float)n_total * 1000 / DURATION_MS);
   Serial.println(" samples/sec)");
-  Serial.print("Most recent values:");
   for (uint8_t c = 0; c < N_CHANNELS; c++) {
-    Serial.print(" ");
+    Serial.print("  ");
+    Serial.print(name_of_mux(adc.muxes[c]));
+    Serial.print(" = ");
     Serial.print(adc.values[c]);
+    Serial.print(" most recently (");
+    Serial.print(n[c]);
+    Serial.println(" samples captured)");
   }
-  Serial.println();
 }
