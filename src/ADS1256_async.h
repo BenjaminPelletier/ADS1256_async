@@ -114,13 +114,13 @@ class ADS1256 {
 	
 	ADS1256Error beginReset();
 	
-	ADS1256Error beginWriteSettings(uint16_t timeout_ms = DEFAULT_TIMEOUT_MS);
+	ADS1256Error beginWriteSettings(int16_t timeout_ms = DEFAULT_TIMEOUT_MS);
 	
-	ADS1256Error readSettings(bool update_local_settings, uint16_t timeout_ms = DEFAULT_TIMEOUT_MS);
+	ADS1256Error readSettings(bool update_local_settings, int16_t timeout_ms = DEFAULT_TIMEOUT_MS);
 	
-	ADS1256Error blockingInit(uint16_t timeout_ms = 1000);
+	ADS1256Error blockingInit(int16_t timeout_ms = 1000);
 	
-	ADS1256Error beginCapture(uint16_t timeout_ms = DEFAULT_TIMEOUT_MS);
+	ADS1256Error beginCapture(int16_t timeout_ms = DEFAULT_TIMEOUT_MS);
 	
 	void continueCapture();
 	
@@ -278,7 +278,7 @@ void ADS1256<nCycledChannels>::readRegisters(Register first_register, uint8_t n_
 }
 
 template<uint8_t nCycledChannels>
-ADS1256Error ADS1256<nCycledChannels>::beginWriteSettings(uint16_t timeout_ms) {
+ADS1256Error ADS1256<nCycledChannels>::beginWriteSettings(int16_t timeout_ms) {
 	if (state_ != ADS1256State::Idle) {
 		return ADS1256Error::CanOnlyWriteSettingsWhenIdle;
 	}
@@ -304,7 +304,7 @@ ADS1256Error ADS1256<nCycledChannels>::beginWriteSettings(uint16_t timeout_ms) {
 }
 
 template<uint8_t nCycledChannels>
-ADS1256Error ADS1256<nCycledChannels>::readSettings(bool update_local_settings, uint16_t timeout_ms) {
+ADS1256Error ADS1256<nCycledChannels>::readSettings(bool update_local_settings, int16_t timeout_ms) {
 		if (state_ != ADS1256State::Idle) {
 		return ADS1256Error::CanOnlyReadSettingsWhenIdle;
 	}
@@ -345,7 +345,7 @@ ADS1256Error ADS1256<nCycledChannels>::readSettings(bool update_local_settings, 
 }
 
 template<uint8_t nCycledChannels>
-ADS1256Error ADS1256<nCycledChannels>::blockingInit(uint16_t timeout_ms) {
+ADS1256Error ADS1256<nCycledChannels>::blockingInit(int16_t timeout_ms) {
 	ADS1256Error result;
 	unsigned long t0 = millis();
 	result = beginReset();
@@ -360,7 +360,7 @@ ADS1256Error ADS1256<nCycledChannels>::blockingInit(uint16_t timeout_ms) {
 		update();
 	}
 
-	result = beginWriteSettings();
+	result = beginWriteSettings(t0 + timeout_ms - millis());
 	if (result != ADS1256Error::None) {
 		return result;
 	}
@@ -372,7 +372,7 @@ ADS1256Error ADS1256<nCycledChannels>::blockingInit(uint16_t timeout_ms) {
 		update();
 	}
 
-	result = readSettings(true);
+	result = readSettings(true, t0 + timeout_ms - millis());
 	if (result != ADS1256Error::None) {
 		return result;
 	}
@@ -381,7 +381,7 @@ ADS1256Error ADS1256<nCycledChannels>::blockingInit(uint16_t timeout_ms) {
 }
 
 template<uint8_t nCycledChannels>
-ADS1256Error ADS1256<nCycledChannels>::beginCapture(uint16_t timeout_ms) {
+ADS1256Error ADS1256<nCycledChannels>::beginCapture(int16_t timeout_ms) {
 	if (state_ != ADS1256State::Idle) {
 		return ADS1256Error::CanOnlyBeginCaptureWhenIdle;
 	}
