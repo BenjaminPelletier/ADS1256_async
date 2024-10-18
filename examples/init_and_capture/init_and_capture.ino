@@ -4,13 +4,13 @@
 
 // Assumes ADS1256 is connected to SPI pins for SCLK, MOSI, and MISO
 const uint8_t ADC_PIN_DRDY = 4;
+const uint8_t ADC_PIN_CS = 22;
 const uint8_t ADC_PIN_RESET = 18;  // This can be either the dedicated RST pin, or the SCLK pin (based on ADC_RESET_MODE below)
 const uint8_t ADC_PIN_SYNC = NO_PIN;
-const uint8_t ADC_PIN_CS = 22;
 const ADS1256ResetMode ADC_RESET_MODE = ADS1256ResetMode::ClockPin;
 
 #define N_CHANNELS 5
-ADS1256<N_CHANNELS> adc(SPI, ADC_PIN_CS, ADC_PIN_DRDY, ADC_PIN_RESET, ADC_PIN_SYNC, ADC_RESET_MODE);
+ADS1256<N_CHANNELS> adc(SPI, ADC_PIN_DRDY, ADC_PIN_CS, ADC_PIN_RESET, ADC_PIN_SYNC, ADC_RESET_MODE);
 
 unsigned long last_print;
 

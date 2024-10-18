@@ -13,7 +13,7 @@
 #define DEFAULT_TIMEOUT_MS (10)
 
 enum class ADS1256ResetMode : uint8_t {
-	Undefined = 0,
+	UserManaged = 0,
 	ControlPin,
 	ClockPin,
 };
@@ -47,8 +47,8 @@ class ADS1256 {
   public:
 	ADS1256(
 		SPIClass& spi,
-		const uint8_t pin_cs,
 		const uint8_t pin_drdy,
+		const uint8_t pin_cs,
 		const uint8_t pin_reset,
 		const uint8_t pin_sync,
 		const ADS1256ResetMode reset_mode
@@ -61,8 +61,8 @@ class ADS1256 {
 	{}
 	
 	ADS1256(
-		const uint8_t pin_cs,
 		const uint8_t pin_drdy,
+		const uint8_t pin_cs,
 		const uint8_t pin_reset,
 		const uint8_t pin_sync,
 		const ADS1256ResetMode reset_mode
@@ -70,17 +70,17 @@ class ADS1256 {
 	{}
 	
 	ADS1256(
-		const uint8_t pin_cs,
 		const uint8_t pin_drdy,
+		const uint8_t pin_cs,
 		const uint8_t pin_reset,
 		const ADS1256ResetMode reset_mode
 	) : ADS1256(pin_cs, pin_drdy, pin_reset, NO_PIN, reset_mode)
 	{}
 	
 	ADS1256(
-		const uint8_t pin_cs,
-		const uint8_t pin_drdy
-	) : ADS1256(pin_cs, pin_drdy, NO_PIN, NO_PIN, ADS1256ResetMode::Undefined)
+		const uint8_t pin_drdy,
+		const uint8_t pin_cs
+	) : ADS1256(pin_cs, pin_drdy, NO_PIN, NO_PIN, ADS1256ResetMode::UserManaged)
 	{}
 	
 	// Default SPI settings may be overridden
@@ -210,10 +210,12 @@ void ADS1256<nCycledChannels>::update() {
 template<uint8_t nCycledChannels>
 ADS1256Error ADS1256<nCycledChannels>::beginReset() {
 	// Set up pins
-	pinMode(pin_drdy_, INPUT);	
-	pinMode(pin_reset_, OUTPUT);
-	pinMode(pin_sync_, OUTPUT);
+	pinMode(pin_drdy_, INPUT);
 	pinMode(pin_cs_, OUTPUT);
+	if (pin_reset_ != NO_PIN) {
+		pinMode(pin_reset_, OUTPUT);
+	}
+	pinMode(pin_sync_, OUTPUT);
 	digitalWrite(pin_sync_, HIGH);
 	digitalWrite(pin_cs_, HIGH);
 
@@ -346,19 +348,25 @@ ADS1256Error ADS1256<nCycledChannels>::readSettings(bool update_local_settings, 
 
 template<uint8_t nCycledChannels>
 ADS1256Error ADS1256<nCycledChannels>::blockingInit(int16_t timeout_ms) {
-	// Reset ADS1256
 	ADS1256Error result;
 	unsigned long t0 = millis();
-	result = beginReset();
-	if (result != ADS1256Error::None) {
-		return result;
-	}
-
-	while (state_ != ADS1256State::Idle) {
-		if (millis() - t0 > timeout_ms) {
-			return ADS1256Error::TimeoutWhileResetting;
+	
+	if (reset_mode_ != ADS1256ResetMode::UserManaged) {
+		// Reset ADS1256
+		result = beginReset();
+		if (result != ADS1256Error::None) {
+			return result;
 		}
-		update();
+
+		while (state_ != ADS1256State::Idle) {
+			if (millis() - t0 > timeout_ms) {
+				return ADS1256Error::TimeoutWhileResetting;
+			}
+			update();
+		}
+	} else {
+		// Assume the user has taken care of resetting the ADS1256
+		state_ = ADS1256State::Idle;
 	}
 
 	// Write settings to ADS1256
