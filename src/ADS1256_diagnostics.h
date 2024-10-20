@@ -180,4 +180,83 @@ void print_configuration(ADS1256<nCycledChannels>& adc) {
 	print_configuration(adc, Serial);
 }
 
+template<uint8_t nCycledChannels>
+bool verbose_init(ADS1256<nCycledChannels>& adc, Stream& serial, unsigned long print_period_ms = 1000) {
+  serial.println("Initializing ADS1256...");
+  unsigned long last_print = millis();
+
+  // Begin asynchronous reset
+  unsigned long t0 = micros();
+  ADS1256Error result = adc.beginReset();
+  if (result != ADS1256Error::None) {
+    serial.print("Unable to begin ADS1256 reset: ");
+    serial.println(name_of(result));
+    return false;
+  }
+
+  // Wait for reset to complete
+  while (adc.state() != ADS1256State::Idle) {
+    if (millis() > last_print + print_period_ms) {
+      serial.print("  Still resetting ADS1256 (");
+      serial.print(name_of(adc.state()));
+      serial.println(")...");
+      last_print = millis();
+    }
+    adc.update();
+  }
+  unsigned long dt = micros() - t0;
+  serial.print("  Complete in ");
+  serial.print(dt);
+  serial.println("us");
+
+  // Write our desired settings
+  serial.println("Writing ADS1256 settings...");
+  last_print = millis();
+  t0 = micros();
+  result = adc.beginWriteSettings();
+  if (result != ADS1256Error::None) {
+    serial.print("Unable to begin writing ADS1256 settings: ");
+    serial.println(name_of(result));
+    return false;
+  }
+
+  // Wait for settings-write to complete (includes auto calibration)
+  while (adc.state() != ADS1256State::Idle) {
+    if (millis() > last_print + 1000) {
+      serial.print("  Still writing ADS1256 settings(");
+      serial.print(name_of(adc.state()));
+      serial.println(")...");
+      last_print = millis();
+    }
+    adc.update();
+  }
+  dt = micros() - t0;
+  serial.print("  Complete in ");
+  serial.print(dt);
+  serial.println("us");
+
+  // Verify that the settings were written correctly by reading them back
+  result = adc.readSettings(false);
+  if (result != ADS1256Error::None) {
+    serial.print("Unable to verify ADS1256 settings: ");
+    serial.println(name_of(result));
+    uint8_t register_values[4];
+    adc.readRegisters(Register::STATUS, 4, register_values);
+    serial.print("  Register values read: STATUS=0b");
+    serial.print(register_values[0], BIN);
+    serial.print(" MUX=0x");
+    serial.print(register_values[1], HEX);
+    serial.print(" ADCON=0b");
+    serial.print(register_values[2], BIN);
+    serial.print(" DRATE=0b");
+    serial.println(register_values[3], BIN);
+    return false;
+  }
+
+  serial.println("Initialized with configuration:");
+  print_configuration(adc);
+  
+  return true;
+}
+
 #endif
