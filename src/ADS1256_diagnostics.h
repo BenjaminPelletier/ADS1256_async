@@ -211,6 +211,14 @@ bool verbose_init(ADS1256<nCycledChannels>& adc, Stream& serial, unsigned long p
 
   // Write our desired settings
   serial.println("Writing ADS1256 settings...");
+  serial.print("  Register values to write: STATUS=0b");
+  serial.print(adc.getStatusRegisterValue(), BIN);
+  serial.print(", MUX=0x");
+  serial.print(adc.getMuxRegisterValue(), HEX);
+  serial.print(", ADCON=0b");
+  serial.print(adc.getControlRegisterValue(), BIN);
+  serial.print(", DRATE=0x");
+  serial.println((uint8_t)adc.data_rate, HEX);
   last_print = millis();
   t0 = micros();
   result = adc.beginWriteSettings();
@@ -248,8 +256,8 @@ bool verbose_init(ADS1256<nCycledChannels>& adc, Stream& serial, unsigned long p
     serial.print(register_values[1], HEX);
     serial.print(" ADCON=0b");
     serial.print(register_values[2], BIN);
-    serial.print(" DRATE=0b");
-    serial.println(register_values[3], BIN);
+    serial.print(" DRATE=0x");
+    serial.println(register_values[3], HEX);
     return false;
   }
 

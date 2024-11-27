@@ -106,6 +106,8 @@ class ADS1256 {
 		return state_;
 	}
 	
+	void setupPins();
+	
 	void update();
 	
 	void writeRegisters(Register first_register, uint8_t n_registers, const uint8_t* values);
@@ -126,18 +128,6 @@ class ADS1256 {
 	
 	ADS1256Error endCapture();
 	
-  private:
-	SPIClass& spi_;
-	ADS1256ResetMode reset_mode_;
-	
-	uint8_t pin_cs_;
-	uint8_t pin_drdy_;
-	uint8_t pin_reset_;
-	uint8_t pin_sync_;
-	
-	ADS1256State state_;
-	
-	uint8_t current_mux_ = NO_MUX;
 	
 	inline uint8_t getStatusRegisterValue() {
 		return (lsb_first ? STATUS_ORDER_LSB : STATUS_ORDER_MSB) |
@@ -154,6 +144,18 @@ class ADS1256 {
 			(uint8_t)sensor_detect |
 			(uint8_t)gain;
 	}
+  private:
+	SPIClass& spi_;
+	ADS1256ResetMode reset_mode_;
+	
+	uint8_t pin_cs_;
+	uint8_t pin_drdy_;
+	uint8_t pin_reset_;
+	uint8_t pin_sync_;
+	
+	ADS1256State state_;
+	
+	uint8_t current_mux_ = NO_MUX;
 	
 	// Note: assumed clock frequency of 7.68 MHz for delay_* below
 	inline void delay_t6() {
@@ -182,6 +184,21 @@ class ADS1256 {
 	}
 };
 
+
+template<uint8_t nCycledChannels>
+void ADS1256<nCycledChannels>::setupPins() {
+  pinMode(pin_drdy_, INPUT_PULLUP);	
+  pinMode(pin_cs_, OUTPUT);
+  digitalWrite(pin_cs_, HIGH);
+  if (pin_sync_ != NO_PIN) {
+    pinMode(pin_sync_, OUTPUT);
+    digitalWrite(pin_sync_, HIGH);
+  }
+  if (pin_reset_ != NO_PIN && reset_mode_ == ADS1256ResetMode::ControlPin) {
+    pinMode(pin_reset_, OUTPUT);
+	digitalWrite(pin_reset_, HIGH);
+  }
+}
 
 template<uint8_t nCycledChannels>
 void ADS1256<nCycledChannels>::update() {
