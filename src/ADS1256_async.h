@@ -6,16 +6,16 @@
 
 #include "ADS1256_constants.h"
 
-#define NO_PIN (255)
-#define NO_MUX (255)
-#define NO_NEW_DATA (255)
+#define ADS1256_NO_PIN (255)
+#define ADS1256_NO_MUX (255)
+#define ADS1256_NO_NEW_DATA (255)
 #define IRRELEVANT (0xFF)
 #define DEFAULT_TIMEOUT_MS (10)
 
 enum class ADS1256ResetMode : uint8_t {
 	UserManaged = 0,
 	ControlPin,
-	ClockPin,
+	ClockPin,  // Note: reset pin must be specified as the clock pin when this reset mode is used
 };
 
 enum class ADS1256State : uint8_t {
@@ -74,13 +74,13 @@ class ADS1256 {
 		const uint8_t pin_cs,
 		const uint8_t pin_reset,
 		const ADS1256ResetMode reset_mode
-	) : ADS1256(pin_cs, pin_drdy, pin_reset, NO_PIN, reset_mode)
+	) : ADS1256(pin_cs, pin_drdy, pin_reset, ADS1256_NO_PIN, reset_mode)
 	{}
 	
 	ADS1256(
 		const uint8_t pin_drdy,
 		const uint8_t pin_cs
-	) : ADS1256(pin_cs, pin_drdy, NO_PIN, NO_PIN, ADS1256ResetMode::UserManaged)
+	) : ADS1256(pin_cs, pin_drdy, ADS1256_NO_PIN, ADS1256_NO_PIN, ADS1256ResetMode::UserManaged)
 	{}
 	
 	// Default SPI settings may be overridden
@@ -100,7 +100,7 @@ class ADS1256 {
 	uint8_t muxes[nCycledChannels];
 	uint8_t next_mux = 0;
 	int32_t values[nCycledChannels];
-	uint8_t new_data = NO_NEW_DATA;
+	uint8_t new_data = ADS1256_NO_NEW_DATA;
 	
 	inline ADS1256State state() {
 		return state_;
@@ -136,7 +136,7 @@ class ADS1256 {
 	}
 	
 	inline uint8_t getMuxRegisterValue() {
-		return muxes[current_mux_ == NO_MUX ? next_mux : current_mux_];
+		return muxes[current_mux_ == ADS1256_NO_MUX ? next_mux : current_mux_];
 	}
 	
 	inline uint8_t getControlRegisterValue() {
@@ -155,7 +155,7 @@ class ADS1256 {
 	
 	ADS1256State state_;
 	
-	uint8_t current_mux_ = NO_MUX;
+	uint8_t current_mux_ = ADS1256_NO_MUX;
 	
 	// Note: assumed clock frequency of 7.68 MHz for delay_* below
 	inline void delay_t6() {
@@ -190,11 +190,11 @@ void ADS1256<nCycledChannels>::setupPins() {
   pinMode(pin_drdy_, INPUT_PULLUP);	
   pinMode(pin_cs_, OUTPUT);
   digitalWrite(pin_cs_, HIGH);
-  if (pin_sync_ != NO_PIN) {
+  if (pin_sync_ != ADS1256_NO_PIN) {
     pinMode(pin_sync_, OUTPUT);
     digitalWrite(pin_sync_, HIGH);
   }
-  if (pin_reset_ != NO_PIN && reset_mode_ == ADS1256ResetMode::ControlPin) {
+  if (pin_reset_ != ADS1256_NO_PIN && reset_mode_ == ADS1256ResetMode::ControlPin) {
     pinMode(pin_reset_, OUTPUT);
 	digitalWrite(pin_reset_, HIGH);
   }
@@ -229,19 +229,19 @@ ADS1256Error ADS1256<nCycledChannels>::beginReset() {
 	// Set up pins
 	pinMode(pin_drdy_, INPUT);
 	pinMode(pin_cs_, OUTPUT);
-	if (pin_reset_ != NO_PIN) {
+	if (pin_reset_ != ADS1256_NO_PIN) {
 		pinMode(pin_reset_, OUTPUT);
 	}
 	pinMode(pin_sync_, OUTPUT);
 	digitalWrite(pin_sync_, HIGH);
 	digitalWrite(pin_cs_, HIGH);
 
-	if (reset_mode_ == ADS1256ResetMode::ControlPin && pin_reset_ != NO_PIN) {
+	if (reset_mode_ == ADS1256ResetMode::ControlPin && pin_reset_ != ADS1256_NO_PIN) {
 		// Initiate ADS1256 reset via control pin
 		digitalWrite(pin_reset_, LOW);
 		delayMicroseconds(5);
 		digitalWrite(pin_reset_, HIGH);
-	} else if (reset_mode_ == ADS1256ResetMode::ClockPin && pin_reset_ != NO_PIN) {
+	} else if (reset_mode_ == ADS1256ResetMode::ClockPin && pin_reset_ != ADS1256_NO_PIN) {
 		// Initiate ADS1256 reset via SCLK signaling
 		spi_.end();  // Make sure we can control the pin (ok if begin has not yet been called)
 		uint8_t sclk = pin_reset_;
@@ -448,11 +448,11 @@ void ADS1256<nCycledChannels>::continueCapture() {
 		}
 	} else if (state_ == ADS1256State::FinishingCapture) {
 		// Do not begin a new conversion
-		current_mux_ = NO_MUX;
+		current_mux_ = ADS1256_NO_MUX;
 		state_ = ADS1256State::Idle;
 	}
 	
-	if (this_mux != NO_MUX) {
+	if (this_mux != ADS1256_NO_MUX) {
 		// Read the measurement from the previous converstion
 		spi_.transfer(CMD_RDATA);
 		delay_t6();
