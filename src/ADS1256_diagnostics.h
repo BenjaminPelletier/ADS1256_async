@@ -154,6 +154,8 @@ String name_of(SDCS sdcs) {
 			return "2 uA";
 		case SDCS::SDC10uA:
 			return "10 uA";
+		default:
+			return "unknown";
 	}
 }
 
